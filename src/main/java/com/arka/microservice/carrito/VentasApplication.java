@@ -1,4 +1,4 @@
-package com.arka.microservice.ventas;
+package com.arka.microservice.carrito;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
