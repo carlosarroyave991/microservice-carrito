@@ -2,6 +2,7 @@ package com.arka.microservice.carrito.domain.ports.in;
 
 import com.arka.microservice.carrito.domain.models.ProductCarModel;
 import lombok.AllArgsConstructor;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 /**
@@ -10,4 +11,6 @@ import reactor.core.publisher.Mono;
  */
 public interface IProductCarPortUseCase {
     Mono<ProductCarModel> createProductCar(ProductCarModel model);
+    Flux<ProductCarModel> getAllProductCar();
+    Mono<ProductCarModel> getByProductCarId(Long id);
 }

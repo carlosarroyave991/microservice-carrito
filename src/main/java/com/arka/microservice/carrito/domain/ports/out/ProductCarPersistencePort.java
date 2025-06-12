@@ -3,6 +3,7 @@ package com.arka.microservice.carrito.domain.ports.out;
 import com.arka.microservice.carrito.domain.models.ProductCarModel;
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 /**
@@ -10,4 +11,6 @@ import reactor.core.publisher.Mono;
  */
 public interface ProductCarPersistencePort {
     Mono<ProductCarModel> save(ProductCarModel model);
+    Flux<ProductCarModel> findAll();
+    Mono<ProductCarModel> findById(Long id);
 }

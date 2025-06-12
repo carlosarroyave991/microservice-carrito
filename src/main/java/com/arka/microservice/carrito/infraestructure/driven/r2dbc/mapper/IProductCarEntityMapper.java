@@ -1,4 +1,4 @@
-package com.arka.microservice.carrito.infraestructure.driver.rest.mapper;
+package com.arka.microservice.carrito.infraestructure.driven.r2dbc.mapper;
 
 import com.arka.microservice.carrito.domain.models.ProductCarModel;
 import com.arka.microservice.carrito.infraestructure.driven.r2dbc.entity.ProductCarEntity;
