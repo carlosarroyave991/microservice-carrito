@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -29,6 +30,7 @@ public class ProductCarAdapterImpl implements ProductCarPersistencePort {
      * @param model objeto a guardar
      * @return retorna un objeto mapeado para el dominio
      */
+    @Transactional
     @Override
     public Mono<ProductCarModel> save(ProductCarModel model) {
         ProductCarEntity entity = mapper.toEntity(model);
@@ -54,6 +56,27 @@ public class ProductCarAdapterImpl implements ProductCarPersistencePort {
     @Override
     public Mono<ProductCarModel> findById(Long id) {
         return repository.findById(id)
+                .map(mapper::toModel);
+    }
+
+    /**
+     * Funcion que eliminar un objeto dado su id y retorna el Mono<Void> correspondiente.
+     * @param id identificador del objeto a eliminar
+     */
+    @Override
+    public Mono<Void> delete(Long id) {
+        return repository.deleteById(id);
+    }
+
+    /** Funcion que actualiza el objeto en la base de datos
+     * @param model data con informacion a actualizar
+     * @return mono error o vacio
+     */
+    @Transactional
+    @Override
+    public Mono<ProductCarModel> update(ProductCarModel model) {
+        ProductCarEntity entity = mapper.toEntity(model);
+        return repository.save(entity)
                 .map(mapper::toModel);
     }
 }

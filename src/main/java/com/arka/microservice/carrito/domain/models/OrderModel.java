@@ -1,5 +1,6 @@
 package com.arka.microservice.carrito.domain.models;
 
+import com.arka.microservice.carrito.domain.models.enums.OrderStatus;
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
 import org.springframework.data.relational.core.mapping.Column;
@@ -16,7 +17,7 @@ public class OrderModel {
     private LocalDate orderDate;
     private Integer amountValue;
     private BigDecimal salePrice;
-    private String orderStatus;
+    private OrderStatus orderStatus;
     private Long carId;
     private Long storageId;
 
@@ -44,11 +45,11 @@ public class OrderModel {
         this.carId = carId;
     }
 
-    public String getOrderStatus() {
+    public OrderStatus getOrderStatus() {
         return orderStatus;
     }
 
-    public void setOrderStatus(String orderStatus) {
+    public void setOrderStatus(OrderStatus orderStatus) {
         this.orderStatus = orderStatus;
     }
 

@@ -1,61 +1,24 @@
-package com.arka.microservice.carrito.infraestructure.driven.r2dbc.entity;
+package com.arka.microservice.carrito.infraestructure.driver.rest.dto.resp;
 
-import com.fasterxml.jackson.annotation.JsonIdentityInfo;
-import com.fasterxml.jackson.annotation.ObjectIdGenerators;
+import com.arka.microservice.carrito.domain.models.enums.OrderStatus;
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
-import org.mapstruct.EnumMapping;
-import org.springframework.data.annotation.Id;
-import org.springframework.data.annotation.Transient;
-import org.springframework.data.relational.core.mapping.Column;
-import org.springframework.data.relational.core.mapping.MappedCollection;
-import org.springframework.data.relational.core.mapping.Table;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
 @AllArgsConstructor
 @NoArgsConstructor
-@JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, property = "id")
-@Table(name = "order")
-public class OrderEntity {
-    @Id
+public class OrderResponseDto {
     private Long id;
     private String reference;
-    @Column("payment_method")
     private String paymentMethod;
-    @Column("order_date")
     private LocalDate orderDate;
-    @Column("amount_value")
     private Integer amountValue;
-    @Column("sale_price")
     private BigDecimal salePrice;
-    @Column("order_status")
-    private String orderStatus;
-    @Column("car_id")
+    private OrderStatus orderStatus;
     private Long carId;
-    @Column("storage_id")
     private Long storageId;
-
-    @Transient
-    @MappedCollection(idColumn = "car_id")
-    private CarEntity carEntity;
-
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public CarEntity getCarEntity() {
-        return carEntity;
-    }
-
-    public void setCarEntity(CarEntity carEntity) {
-        this.carEntity = carEntity;
-    }
 
     public Long getStorageId() {
         return storageId;
@@ -73,11 +36,11 @@ public class OrderEntity {
         this.carId = carId;
     }
 
-    public String getOrderStatus() {
+    public OrderStatus getOrderStatus() {
         return orderStatus;
     }
 
-    public void setOrderStatus(String orderStatus) {
+    public void setOrderStatus(OrderStatus orderStatus) {
         this.orderStatus = orderStatus;
     }
 
@@ -119,5 +82,13 @@ public class OrderEntity {
 
     public void setReference(String reference) {
         this.reference = reference;
+    }
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
     }
 }

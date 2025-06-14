@@ -13,4 +13,6 @@ public interface IProductCarPortUseCase {
     Mono<ProductCarModel> createProductCar(ProductCarModel model);
     Flux<ProductCarModel> getAllProductCar();
     Mono<ProductCarModel> getByProductCarId(Long id);
+    Mono<Void> deleteById(Long id);
+    Mono<ProductCarModel> updateProductCar(ProductCarModel model, Long id);
 }

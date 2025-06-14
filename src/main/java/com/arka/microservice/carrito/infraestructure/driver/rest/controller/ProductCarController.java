@@ -6,6 +6,7 @@ import com.arka.microservice.carrito.infraestructure.driver.rest.dto.req.Product
 import com.arka.microservice.carrito.infraestructure.driver.rest.dto.resp.ProductCarResponseDto;
 import com.arka.microservice.carrito.infraestructure.driver.rest.mapper.IProductCarMapperDto;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
@@ -50,9 +51,35 @@ public class ProductCarController {
      */
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public Mono<ProductCarResponseDto> createProductCar(ProductCarResquestDto request){
+    public Mono<ProductCarResponseDto> createProductCar(@Valid @RequestBody ProductCarResquestDto request){
         ProductCarModel model = mapper.toModel(request);
         return service.createProductCar(model)
                 .map(mapper::toResponse);
+    }
+
+    /**
+     * Endpoint para actualizar un objeto
+     * @param id identificador del objeto
+     * @param request datos del objeto
+     * @return objeto actualizado en forma de dto
+     */
+    @PutMapping("/{id}")
+    @ResponseStatus(HttpStatus.OK)
+    public Mono<ProductCarResponseDto> updateProductCar(@RequestBody ProductCarResquestDto request,
+                                                        @PathVariable("id")Long id){
+        ProductCarModel model = mapper.toModel(request);
+        return service.updateProductCar(model, id)
+                .map(mapper::toResponse);
+    }
+
+    /**
+     * Endpoint para eliminar un objeto
+     * @param id identificador del objeto a eliminar
+     * @return Mono vacio despues de borrarlo
+     */
+    @DeleteMapping("/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public Mono<Void> deleteProductCar(@PathVariable("id")Long id){
+        return service.deleteById(id);
     }
 }
