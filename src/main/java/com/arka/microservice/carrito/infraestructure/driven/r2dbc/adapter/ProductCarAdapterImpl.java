@@ -79,4 +79,14 @@ public class ProductCarAdapterImpl implements ProductCarPersistencePort {
         return repository.save(entity)
                 .map(mapper::toModel);
     }
+
+    /** Funcion que consulta los productos que pertenezcan a un carrito
+     * @param carId identificador del carrito
+     * @return objeto flux o flux vacio
+     */
+    @Override
+    public Flux<ProductCarModel> findAllByCarId(Long carId) {
+        return repository.findAllByCarId(carId)
+                .map(mapper::toModel);
+    }
 }

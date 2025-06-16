@@ -2,9 +2,9 @@ package com.arka.microservice.carrito.application.usecases;
 
 import com.arka.microservice.carrito.domain.exception.DuplicateResourceException;
 import com.arka.microservice.carrito.domain.exception.NotFoundException;
-import com.arka.microservice.carrito.domain.models.ProductCarModel;
-import com.arka.microservice.carrito.domain.models.StockUpdateModel;
+import com.arka.microservice.carrito.domain.models.*;
 import com.arka.microservice.carrito.domain.ports.in.IProductCarPortUseCase;
+import com.arka.microservice.carrito.domain.ports.out.CarPersistencePort;
 import com.arka.microservice.carrito.domain.ports.out.ProductCarPersistencePort;
 import com.arka.microservice.carrito.infraestructure.driven.r2dbc.config.webclient.WebClientConfig;
 import lombok.RequiredArgsConstructor;
@@ -13,6 +13,10 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 import static com.arka.microservice.carrito.domain.exception.error.CommonErrorCode.*;
 
@@ -23,6 +27,7 @@ import static com.arka.microservice.carrito.domain.exception.error.CommonErrorCo
 @RequiredArgsConstructor
 public class ProductCarUseCaseImpl implements IProductCarPortUseCase {
     private final ProductCarPersistencePort service;
+    private final CarPersistencePort carService;
     private final WebClient productWebClient;
 
     /**
@@ -125,4 +130,65 @@ public class ProductCarUseCaseImpl implements IProductCarPortUseCase {
                 });
     }
 
+    /**
+     * Servicio que traera todos los productos que le pertenecen a un carrito
+     * @param carId identificador del carrito
+     * @return objeto flux o flux vacio
+     */
+    @Override
+    public Mono<CarWithProductsModel> getProductsByCarId(Long carId) {
+        return carService.findById(carId)
+                .switchIfEmpty(Mono.error(new NotFoundException(ID_NOT_FOUND)))
+                .flatMap(carModel -> {
+                    // Crear el modelo de respuesta
+                    CarWithProductsModel response = new CarWithProductsModel();
+                    response.setId(carModel.getId());
+                    response.setCreatedDate(carModel.getCreatedDate());
+                    response.setUserId(carModel.getUserId());
+
+                    // Obtener todos los productos del carrito
+                    return service.findAllByCarId(carId)
+                            .collectList()
+                            .flatMap(productCars -> {
+                                // Si no hay productos devolver una lista vacia
+                                if (productCars.isEmpty()) {
+                                    response.setProductDetailModels(List.of());
+                                    return Mono.just(response);
+                                }
+
+                                // Extraer los IDs de productos
+                                List<Long> productIds = productCars.stream() //stream me permite realizar operaciones en cadena
+                                        .map(ProductCarModel::getProductId)
+                                        .collect(Collectors.toList());
+
+                                // Crear mapa de ID de producto -> cantidad
+                                Map<Long, Integer> quantityMap = productCars.stream() //stream me permite realizar operaciones en cadena
+                                        .collect(Collectors.toMap(
+                                                ProductCarModel::getProductId,
+                                                ProductCarModel::getQuantity
+                                        ));
+
+                                // Llamar al endpoint /by-ids con todos los IDs
+                                return productWebClient.post()
+                                        .uri("/api/product/by-ids")
+                                        .bodyValue(new ProductIdsRequestDto(productIds))
+                                        .retrieve()
+                                        .bodyToFlux(ProductDetailModel.class)
+                                        .map(productDetail -> {
+                                            // Asignar la cantidad desde el mapa
+                                            productDetail.setQuantity(quantityMap.get(productDetail.getId()));
+                                            return productDetail;
+                                        })
+                                        .collectList()
+                                        .map(productList -> {
+                                            response.setProductDetailModels(productList);
+                                            return response;
+                                        })
+                                        .onErrorResume(error -> {
+                                            error.printStackTrace();
+                                            return Mono.error(new DuplicateResourceException(WEBCLIENT));
+                                        });
+                            });
+                });
+    }
 }

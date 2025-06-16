@@ -1,13 +1,17 @@
 package com.arka.microservice.carrito.infraestructure.driver.rest.controller;
 
+import com.arka.microservice.carrito.domain.models.CarWithProductsModel;
 import com.arka.microservice.carrito.domain.models.ProductCarModel;
+import com.arka.microservice.carrito.domain.models.ProductDetailModel;
 import com.arka.microservice.carrito.domain.ports.in.IProductCarPortUseCase;
 import com.arka.microservice.carrito.infraestructure.driver.rest.dto.req.ProductCarResquestDto;
 import com.arka.microservice.carrito.infraestructure.driver.rest.dto.resp.ProductCarResponseDto;
 import com.arka.microservice.carrito.infraestructure.driver.rest.mapper.IProductCarMapperDto;
+import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.boot.autoconfigure.graphql.GraphQlProperties;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
@@ -42,6 +46,18 @@ public class ProductCarController {
     public Mono<ProductCarResponseDto> getProductCarById(@PathVariable("id")Long id){
         return service.getByProductCarId(id)
                 .map(mapper::toResponse);
+    }
+
+    /**
+     * Endpoint para obtener todos los ids de los productos que pertenecena  un carrito
+     * @param carId identificador del carrito
+     * @return objeto mono o vacio creado en formato de dto
+     */
+    @GetMapping("/car/{carId}")
+    @ResponseStatus(HttpStatus.OK)
+    @Operation(summary = "Obtiene un carrito con todos sus productos")
+    public Mono<CarWithProductsModel> getProductsByCarId(@PathVariable("carId")Long carId){
+        return service.getProductsByCarId(carId);
     }
 
     /**

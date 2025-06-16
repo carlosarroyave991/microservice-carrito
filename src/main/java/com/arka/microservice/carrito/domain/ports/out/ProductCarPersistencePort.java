@@ -13,6 +13,7 @@ public interface ProductCarPersistencePort {
     Mono<ProductCarModel> save(ProductCarModel model);
     Flux<ProductCarModel> findAll();
     Mono<ProductCarModel> findById(Long id);
+    Flux<ProductCarModel> findAllByCarId(Long carId);
     Mono<Void> delete(Long id);
     Mono<ProductCarModel> update(ProductCarModel model);
 }
