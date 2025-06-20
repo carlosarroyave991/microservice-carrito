@@ -12,6 +12,9 @@ public class WebClientConfig {
 
     @Value("${products.service.url}")
     private String productServiceUrl;
+    
+    @Value("${users.service.url}")
+    private String userServiceUrl;
 
     private final SendTokenWebClient sendTokenWebClient;
 
@@ -23,6 +26,16 @@ public class WebClientConfig {
     public WebClient productWebClient(WebClient.Builder builder) {
         return builder
                 .baseUrl(productServiceUrl)
+                .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+                //.filter(logRequest())
+                .filter(sendTokenWebClient.authHeaderFilter())
+                .build();
+    }
+    
+    @Bean
+    public WebClient userWebClient(WebClient.Builder builder) {
+        return builder
+                .baseUrl(userServiceUrl)
                 .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
                 //.filter(logRequest())
                 .filter(sendTokenWebClient.authHeaderFilter())

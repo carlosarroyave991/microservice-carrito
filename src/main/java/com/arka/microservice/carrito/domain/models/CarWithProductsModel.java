@@ -11,9 +11,26 @@ import java.util.List;
 public class CarWithProductsModel {
     private Long id;
     private LocalDate createdDate;
-    private Long userId;
-
+    //private String name;
+    //private Long userId;
     List<ProductDetailModel> productDetailModels;
+    UserModel userModel;
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public UserModel getUserModel() {
+        return userModel;
+    }
+
+    public void setUserModel(UserModel userModel) {
+        this.userModel = userModel;
+    }
 
     public List<ProductDetailModel> getProductDetailModels() {
         return productDetailModels;
@@ -23,27 +40,11 @@ public class CarWithProductsModel {
         this.productDetailModels = productDetailModels;
     }
 
-    public Long getUserId() {
-        return userId;
-    }
-
-    public void setUserId(Long userId) {
-        this.userId = userId;
-    }
-
     public LocalDate getCreatedDate() {
         return createdDate;
     }
 
     public void setCreatedDate(LocalDate createdDate) {
         this.createdDate = createdDate;
-    }
-
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
     }
 }

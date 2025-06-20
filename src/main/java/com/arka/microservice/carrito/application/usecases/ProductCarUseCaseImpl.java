@@ -29,6 +29,7 @@ public class ProductCarUseCaseImpl implements IProductCarPortUseCase {
     private final ProductCarPersistencePort service;
     private final CarPersistencePort carService;
     private final WebClient productWebClient;
+    private final WebClient userWebClient;
 
     /**
      * Servicio usado para crear un objeto de forma reactiva.
@@ -144,49 +145,62 @@ public class ProductCarUseCaseImpl implements IProductCarPortUseCase {
                     CarWithProductsModel response = new CarWithProductsModel();
                     response.setId(carModel.getId());
                     response.setCreatedDate(carModel.getCreatedDate());
-                    response.setUserId(carModel.getUserId());
-
-                    // Obtener todos los productos del carrito
-                    return service.findAllByCarId(carId)
-                            .collectList()
-                            .flatMap(productCars -> {
-                                // Si no hay productos devolver una lista vacia
-                                if (productCars.isEmpty()) {
-                                    response.setProductDetailModels(List.of());
-                                    return Mono.just(response);
-                                }
-
-                                // Extraer los IDs de productos
-                                List<Long> productIds = productCars.stream() //stream me permite realizar operaciones en cadena
-                                        .map(ProductCarModel::getProductId)
-                                        .collect(Collectors.toList());
-
-                                // Crear mapa de ID de producto -> cantidad
-                                Map<Long, Integer> quantityMap = productCars.stream() //stream me permite realizar operaciones en cadena
-                                        .collect(Collectors.toMap(
-                                                ProductCarModel::getProductId,
-                                                ProductCarModel::getQuantity
-                                        ));
-
-                                // Llamar al endpoint /by-ids con todos los IDs
-                                return productWebClient.post()
-                                        .uri("/api/product/by-ids")
-                                        .bodyValue(new ProductIdsRequestDto(productIds))
-                                        .retrieve()
-                                        .bodyToFlux(ProductDetailModel.class)
-                                        .map(productDetail -> {
-                                            // Asignar la cantidad desde el mapa
-                                            productDetail.setQuantity(quantityMap.get(productDetail.getId()));
-                                            return productDetail;
-                                        })
+                    
+                    // Obtener la información del usuario
+                    return userWebClient.get()
+                            .uri("/api/users/{id}", carModel.getUserId())
+                            .retrieve()
+                            .bodyToMono(UserModel.class)
+                            .onErrorResume(error -> {
+                                error.printStackTrace();
+                                return Mono.error(new DuplicateResourceException(WEBCLIENT));
+                            })
+                            .flatMap(userModel -> {
+                                // Asignar el modelo del usuario
+                                response.setUserModel(userModel);
+                                
+                                // Obtener todos los productos del carrito
+                                return service.findAllByCarId(carId)
                                         .collectList()
-                                        .map(productList -> {
-                                            response.setProductDetailModels(productList);
-                                            return response;
-                                        })
-                                        .onErrorResume(error -> {
-                                            error.printStackTrace();
-                                            return Mono.error(new DuplicateResourceException(WEBCLIENT));
+                                        .flatMap(productCars -> {
+                                            // Si no hay productos devolver una lista vacía
+                                            if (productCars.isEmpty()) {
+                                                response.setProductDetailModels(List.of());
+                                                return Mono.just(response);
+                                            }
+
+                                            // Extraer los IDs de productos
+                                            List<Long> productIds = productCars.stream()
+                                                    .map(ProductCarModel::getProductId)
+                                                    .collect(Collectors.toList());
+
+                                            // Crear mapa de ID de producto -> cantidad
+                                            Map<Long, Integer> quantityMap = productCars.stream()
+                                                    .collect(Collectors.toMap(
+                                                            ProductCarModel::getProductId,
+                                                            ProductCarModel::getQuantity
+                                                    ));
+
+                                            // Llamar al endpoint /by-ids con todos los IDs
+                                            return productWebClient.post()
+                                                    .uri("/api/product/by-ids")
+                                                    .bodyValue(new ProductIdsRequestDto(productIds))
+                                                    .retrieve()
+                                                    .bodyToFlux(ProductDetailModel.class)
+                                                    .map(productDetail -> {
+                                                        // Asignar la cantidad desde el mapa
+                                                        productDetail.setQuantity(quantityMap.get(productDetail.getId()));
+                                                        return productDetail;
+                                                    })
+                                                    .collectList()
+                                                    .map(productList -> {
+                                                        response.setProductDetailModels(productList);
+                                                        return response;
+                                                    })
+                                                    .onErrorResume(error -> {
+                                                        error.printStackTrace();
+                                                        return Mono.error(new DuplicateResourceException(WEBCLIENT));
+                                                    });
                                         });
                             });
                 });
