@@ -13,4 +13,5 @@ public interface IOrderPortUseCase {
     Mono<OrderModel> updateOrder(OrderModel model, Long id);
     Flux<OrderModel> getAllOders();
     Mono<OrderModel> getOrderById(Long id);
+    //Mono<Void> sendOrderStatusNotification(OrderModel order);
 }

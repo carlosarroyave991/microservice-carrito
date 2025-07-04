@@ -15,6 +15,9 @@ public class WebClientConfig {
     
     @Value("${users.service.url}")
     private String userServiceUrl;
+    
+    @Value("${lambda.notification.url}")
+    private String lambdaNotificationUrl;
 
     private final SendTokenWebClient sendTokenWebClient;
 
@@ -39,6 +42,14 @@ public class WebClientConfig {
                 .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
                 //.filter(logRequest())
                 .filter(sendTokenWebClient.authHeaderFilter())
+                .build();
+    }
+    
+    @Bean
+    public WebClient lambdaWebClient(WebClient.Builder builder) {
+        return builder
+                .baseUrl(lambdaNotificationUrl)
+                .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
                 .build();
     }
 }

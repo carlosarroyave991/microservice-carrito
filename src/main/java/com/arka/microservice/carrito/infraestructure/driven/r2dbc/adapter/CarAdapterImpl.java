@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -62,6 +63,7 @@ public class CarAdapterImpl implements CarPersistencePort {
      * @param model objeto a guardar
      * @return retorna un objeto mapeado para el dominio
      */
+    @Transactional
     @Override
     public Mono<CarModel> save(CarModel model) {
         CarEntity entity = mapper.toEntity(model);
