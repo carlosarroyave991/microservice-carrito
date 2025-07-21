@@ -12,6 +12,7 @@ public class CarRequestDto {
     //El id debe ser nulo para una operación de creación
     @Null(message = "The id must be null for a create operation")
     private Long id; // Opcional para 'save', necesario para 'update'
+    @Null
     private LocalDate createdDate;
     private Long userId;
 

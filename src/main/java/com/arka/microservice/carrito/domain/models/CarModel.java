@@ -13,6 +13,7 @@ public class CarModel {
     private LocalDate createdDate;
     private Long userId;
 
+
     public Long getUserId() {
         return userId;
     }

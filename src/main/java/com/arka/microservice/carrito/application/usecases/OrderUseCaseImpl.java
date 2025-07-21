@@ -9,9 +9,13 @@ import com.arka.microservice.carrito.domain.models.enums.OrderStatus;
 import com.arka.microservice.carrito.domain.ports.in.IOrderPortUseCase;
 import com.arka.microservice.carrito.domain.ports.out.CarPersistencePort;
 import com.arka.microservice.carrito.domain.ports.out.OrderPersistencePort;
+import com.arka.microservice.carrito.domain.ports.out.ProductCarPersistencePort;
+import com.arka.microservice.carrito.domain.models.ProductDetailModel;
+import com.arka.microservice.carrito.domain.models.ProductIdsRequestDto;
 import com.arka.microservice.carrito.domain.service.RandomReferenceGenerator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -30,8 +34,10 @@ import static com.arka.microservice.carrito.domain.exception.error.CommonErrorCo
 public class OrderUseCaseImpl implements IOrderPortUseCase {
     private final OrderPersistencePort service;
     private final CarPersistencePort carService;
+    private final ProductCarPersistencePort productCarService;
     private final WebClient userWebClient;
     private final WebClient lambdaWebClient;
+    private final WebClient productWebClient;
     private final RandomReferenceGenerator generatorRef;
 
     /**
@@ -39,14 +45,66 @@ public class OrderUseCaseImpl implements IOrderPortUseCase {
      * @param model objeto order con los parámetros necesarios para la creación.
      * @return retorna un Mono con la orden creada o un error.
      */
+    @Transactional
     @Override
     public Mono<OrderModel> createOrder(OrderModel model) {
         model.setOrderDate(LocalDate.now());
         model.setReference(generatorRef.Generate());
         model.setOrderStatus(OrderStatus.waiting);
-        model.setAmountValue(7);
-        model.setSalePrice(BigDecimal.valueOf(1.500));
-        return service.save(model);
+        
+        // Verificar que el carrito existe
+        return carService.findById(model.getCarId())
+                .switchIfEmpty(Mono.error(new NotFoundException(ID_NOT_FOUND)))
+                .flatMap(car -> productCarService.findAllByCarId(model.getCarId())
+                .collectList()
+                .flatMap(productCars -> {
+                    if (productCars.isEmpty()) {
+                        model.setAmountValue(0);
+                        model.setSalePrice(BigDecimal.ZERO);
+                        return service.save(model);
+                    }
+                    
+                    // Calcular cantidad total
+                    int totalQuantity = productCars.stream()
+                            .mapToInt(pc -> pc.getQuantity())
+                            .sum();
+                    
+                    // Obtener precios de productos
+                    var productIds = productCars.stream()
+                            .map(pc -> pc.getProductId())
+                            .collect(java.util.stream.Collectors.toList());
+                    
+                    return productWebClient.post()
+                            .uri("/api/product/by-ids")
+                            .bodyValue(new ProductIdsRequestDto(productIds))
+                            .retrieve()
+                            .bodyToFlux(ProductDetailModel.class)
+                            .collectList()
+                            .map(products -> {
+                                // Calcular precio total
+                                BigDecimal totalPrice = products.stream()
+                                        .map(product -> {
+                                            int quantity = productCars.stream()
+                                                    .filter(pc -> pc.getProductId().equals(product.getId()))
+                                                    .findFirst()
+                                                    .map(pc -> pc.getQuantity())
+                                                    .orElse(0);
+                                            return product.getPrice().multiply(BigDecimal.valueOf(quantity));
+                                        })
+                                        .reduce(BigDecimal.ZERO, BigDecimal::add);
+                                
+                                model.setAmountValue(totalQuantity);
+                                model.setSalePrice(totalPrice);
+                                return model;
+                            })
+                            .flatMap(service::save)
+                            .onErrorResume(error -> {
+                                // Si falla la consulta de productos, usar valores por defecto
+                                model.setAmountValue(totalQuantity);
+                                model.setSalePrice(BigDecimal.valueOf(1.500));
+                                return service.save(model);
+                            });
+                }));
     }
 
     /**

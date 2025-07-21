@@ -5,6 +5,10 @@ import com.arka.microservice.carrito.domain.ports.in.ICarPortUseCase;
 import com.arka.microservice.carrito.infraestructure.driver.rest.dto.req.CarRequestDto;
 import com.arka.microservice.carrito.infraestructure.driver.rest.dto.resp.CarResponseDto;
 import com.arka.microservice.carrito.infraestructure.driver.rest.mapper.ICarMapperDto;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -23,10 +27,11 @@ public class CarController {
     private final ICarPortUseCase service;
     private final ICarMapperDto mapper;
 
-    /**
-     * Endpoint para obtener todas los objetos.
-     * @return Un Flux de objetos como DTO.
-     */
+    @Operation(summary = "Obtener todos los carritos", description = "Retorna una lista de todos los carritos disponibles")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Lista de carritos obtenida exitosamente"),
+            @ApiResponse(responseCode = "404", description = "No se encontraron carritos")
+    })
     @GetMapping
     @ResponseStatus(HttpStatus.OK)
     public Flux<CarResponseDto> getAllCars(){
@@ -34,50 +39,52 @@ public class CarController {
                 .map(mapper::toResponse);
     }
 
-    /**
-     * Endpoint para obtener un objeto por su ID.
-     * @param id ID del objeto a consultar.
-     * @return objeto encontrado o respuesta 404 si no se encuentra.
-     */
+    @Operation(summary = "Obtener carrito por ID", description = "Retorna un carrito específico por su identificador")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Carrito encontrado exitosamente"),
+            @ApiResponse(responseCode = "404", description = "Carrito no encontrado")
+    })
     @GetMapping("/{id}")
     @ResponseStatus(HttpStatus.OK)
-    public Mono<CarResponseDto> getCarById(@PathVariable("id")Long id){
+    public Mono<CarResponseDto> getCarById(@Parameter(description = "ID del carrito") @PathVariable("id")Long id){
         return service.getCarById(id)
                 .map(mapper::toResponse);
     }
 
-    /**
-     * Endpoint para crear un objeto
-     * @param request data que tendra el objeto
-     * @return objeto creado en forma de dto
-     */
+    @Operation(summary = "Crear nuevo carrito", description = "Crea un nuevo carrito con los datos proporcionados")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "201", description = "Carrito creado exitosamente"),
+            @ApiResponse(responseCode = "400", description = "Datos de entrada inválidos")
+    })
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public Mono<Void> createCar(@Valid @RequestBody CarRequestDto request){
+    public Mono<Void> createCar(@Parameter(description = "Datos del carrito a crear") @Valid @RequestBody CarRequestDto request){
         CarModel model = mapper.toModel(request);
         return service.createCar(model).then();
     }
 
-    /**
-     * Endpoint para crear un product
-     * @param request data que tendra el prudcto
-     * @return product creado en forma de dto
-     */
+    @Operation(summary = "Actualizar carrito", description = "Actualiza un carrito existente con los datos proporcionados")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Carrito actualizado exitosamente"),
+            @ApiResponse(responseCode = "404", description = "Carrito no encontrado"),
+            @ApiResponse(responseCode = "400", description = "Datos de entrada inválidos")
+    })
     @PutMapping("/{id}")
     @ResponseStatus(HttpStatus.OK)
-    public Mono<Void> updateCar(@RequestBody CarRequestDto request, @PathVariable("id")Long id){
+    public Mono<Void> updateCar(@Parameter(description = "Datos del carrito a actualizar") @RequestBody CarRequestDto request, @Parameter(description = "ID del carrito") @PathVariable("id")Long id){
         CarModel model = mapper.toModel(request);
         return service.updateCar(model, id)
                 .then();
     }
 
-    /**
-     * Endpoint para eliminar un objeto por su ID
-     * @return Un Mono vacío que indica que la operación se completó.
-     */
+    @Operation(summary = "Eliminar carrito", description = "Elimina un carrito por su identificador")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "204", description = "Carrito eliminado exitosamente"),
+            @ApiResponse(responseCode = "404", description = "Carrito no encontrado")
+    })
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public Mono<Void> deleteCar(@PathVariable("id")Long id){
+    public Mono<Void> deleteCar(@Parameter(description = "ID del carrito a eliminar") @PathVariable("id")Long id){
         return service.deleteCarById(id);
     }
 }

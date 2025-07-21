@@ -3,12 +3,14 @@ package com.arka.microservice.carrito.application.usecases;
 import com.arka.microservice.carrito.domain.exception.DuplicateResourceException;
 import com.arka.microservice.carrito.domain.exception.NotFoundException;
 import com.arka.microservice.carrito.domain.models.CarModel;
+import com.arka.microservice.carrito.domain.models.UserModel;
 import com.arka.microservice.carrito.domain.ports.in.ICarPortUseCase;
 import com.arka.microservice.carrito.domain.ports.out.CarPersistencePort;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -25,6 +27,7 @@ import static com.arka.microservice.carrito.domain.exception.error.CommonErrorCo
 @RequiredArgsConstructor
 public class CarUseCaseImpl implements ICarPortUseCase {
     private final CarPersistencePort service;
+    private final WebClient userWebClient;
 
     /**
      * Servicio usado para crear un objeto de forma reactiva.
@@ -34,8 +37,16 @@ public class CarUseCaseImpl implements ICarPortUseCase {
     @Transactional
     @Override
     public Mono<CarModel> createCar(CarModel model) {
-        model.setCreatedDate(LocalDate.now());
-        return service.save(model);
+        // Validar que el usuario existe
+        return userWebClient.get()
+                .uri("/api/users/{id}", model.getUserId())
+                .retrieve()
+                .bodyToMono(UserModel.class)
+                .onErrorMap(error -> new NotFoundException(ID_NOT_FOUND))
+                .flatMap(user -> {
+                    model.setCreatedDate(LocalDate.now());
+                    return service.save(model);
+                });
     }
 
     /**
@@ -49,9 +60,22 @@ public class CarUseCaseImpl implements ICarPortUseCase {
     public Mono<CarModel> updateCar(CarModel model, Long id) {
         return service.findById(id)
                 .switchIfEmpty(Mono.error(new NotFoundException(ID_NOT_FOUND)))
-                .flatMap(existing ->{
+                .flatMap(existing -> {
                     existing.setId(id);
-                    if (model.getUserId() != null)existing.setUserId(model.getUserId());
+                    
+                    // Si se va a cambiar el userId, validar que el nuevo usuario existe
+                    if (model.getUserId() != null) {
+                        return userWebClient.get()
+                                .uri("/api/users/{id}", model.getUserId())
+                                .retrieve()
+                                .bodyToMono(UserModel.class)
+                                .onErrorMap(error -> new NotFoundException(ID_NOT_FOUND))
+                                .flatMap(user -> {
+                                    existing.setUserId(model.getUserId());
+                                    return service.update(existing);
+                                });
+                    }
+                    
                     return service.update(existing);
                 });
     }
